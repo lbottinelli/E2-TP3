@@ -2,16 +2,15 @@
 
 module fsm_module_tb;
 
-reg clk, reset, enable; 
+reg clk, reset, data_ready; 
+reg [3:0] key_code;
+wire [15:0] data_out;
 
-wire [3:0] out;
-
-fsm_module fsm_dut(clk, enable, reset, out);
+fsm_module fsm_dut(clk, key_code, data_ready, reset, data_out);
 
 initial begin
     clk = 0;
     reset = 1;
-    enable = 0;
 end
 
 always
@@ -22,7 +21,6 @@ initial begin
     $dumpvars(1);
 
     #17 reset = 0;
-    #10 enable = 1;
 
     #200 $finish;
 end
