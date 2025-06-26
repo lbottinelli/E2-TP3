@@ -1,8 +1,7 @@
 # Nombres de archivo
-MODULE     = fsm_module
+MODULE     = alu_module
 TB         = $(MODULE)_tb
 SRC        = $(MODULE).v
-DEPS	   = concat_module/concat_module.v ../alu_module/alu_module.v
 TESTBENCH  = $(TB).v
 OUT        = simv
 VCD        = waveform.vcd
@@ -11,7 +10,7 @@ VCD        = waveform.vcd
 
 # Compila el módulo y el testbench
 all: $(SRC) $(TESTBENCH)
-	iverilog -o $(OUT) $(SRC) $(DEPS) $(TESTBENCH)
+	iverilog -o $(OUT) $(SRC) $(TESTBENCH)
 
 # Ejecuta la simulación
 run: all

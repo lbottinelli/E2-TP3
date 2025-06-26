@@ -16,3 +16,8 @@ parameter KEY_ASS = 4'b 1100;
 parameter KEY_0 = 4'b 1101;
 parameter KEY_HASH = 4'b 1110;
 parameter KEY_D = 4'b 1111;
+
+parameter SUMA =    2'b00;
+parameter RESTA =   2'b01;
+parameter MULT =    2'b10;
+parameter DIV =     2'b11;

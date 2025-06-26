@@ -34,9 +34,6 @@ module teclado_matrix (
             else if (col[3] == 0) key_code <= state * 4 + 3;
             else data_ready <= 0;
 
-            
-
-
             // avanzar de estado
             state <= state + 1;
             if (state == 3) state <= 0;

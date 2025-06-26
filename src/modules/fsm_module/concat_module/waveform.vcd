@@ -1,0 +1,61 @@
+$date
+	Thu Jun 26 11:31:38 2025
+$end
+$version
+	Icarus Verilog
+$end
+$timescale
+	1ps
+$end
+$scope module concat_module_tb $end
+$var wire 15 ! result [14:0] $end
+$var wire 1 " error $end
+$var reg 4 # digit [3:0] $end
+$var reg 15 $ left [14:0] $end
+$upscope $end
+$enddefinitions $end
+$comment Show the parameter values. $end
+$dumpall
+$end
+#0
+$dumpvars
+b1 $
+b1 #
+0"
+b1011 !
+$end
+#20000
+b1101111 !
+b1011 $
+#40000
+b10001010111 !
+b1101111 $
+#60000
+b10101101100111 !
+b10001010111 $
+#80000
+b11001000000111 !
+b10101101100111 $
+#100000
+b111010001000111 !
+b11001000000111 $
+#120000
+b101011000111 !
+1"
+b111010001000111 $
+#140000
+b110101111000111 !
+0"
+b101011000111 $
+#160000
+b11010111000111 !
+1"
+b110101111000111 $
+#180000
+b1100111000111 !
+1"
+b11010111000111 $
+#200000
+b111000111 !
+1"
+b1100111000111 $
