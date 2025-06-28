@@ -6,6 +6,7 @@ module sumador
 
     output wire [BITS-1:0] O,
     output wire OVERFLOW
+);
 
     localparam [BITS:0] MAX_DECIMAL = 15'd9999;     // Maximo valor que podemos representar en display
     localparam [BITS-1:0] ERROR_SUM = 14'd9999;     // Flag: ERROR DE SUMA -> Valor en 

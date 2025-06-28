@@ -39,6 +39,14 @@ module fsm_module (clk, key_code, data_ready, reset_in, data_out);
 
     reg [2:0] state = NUM_INIT;
 
+    wire gpio_2;
+    wire gpio_4;
+    wire gpio_46;
+    wire gpio_47;
+
+    // Display module
+    display_module display(.VALUE_BIN(1530), .internal_clock(clk), .VALUE_SIGNAL(gpio_46), .ENABLE_SIGNAL(gpio_2), .BOARD_CLOCK_SIGNAL(gpio_4), .DATA_CLOCK_SIGNAL(gpio_47))
+
     // Concat Module
     wire error;
     wire [13:0] concat_result;
@@ -58,18 +66,18 @@ module fsm_module (clk, key_code, data_ready, reset_in, data_out);
     // ALU Modules
     // sumador
     wire sum_overflow;
-    wire [13:0] sum_result;
-    sumador #(.BITS(14)) sumador_mod (lhs, rhs, sum_result, sum_overflow);
+    wire [14:0] sum_result;
+    sumador #(.BITS(15)) sumador_mod (lhs, rhs, sum_result, sum_overflow);
 
     // restador
     wire signo_resta;
-    wire [13:0] resta_result;
-    restador #(.BITS(14)) restador_mod (lhs, rhs, resta_result, signo_resta);
+    wire [14:0] resta_result;
+    restador #(.BITS(15)) restador_mod (lhs, rhs, resta_result, signo_resta);
 
     // multiplicador
     wire mult_out_of_range;
-    wire [13:0] mult_result;
-    multiplicador #(.BITS(14)) multiplicador_mod (lhs, rhs, resta_result, mult_out_of_range);
+    wire [14:0] mult_result;
+    multiplicador #(.BITS(15)) multiplicador_mod (lhs, rhs, resta_result, mult_out_of_range);
 
     // Synchronous logic
     reg [2:0] newState = NUM_INIT;
@@ -180,7 +188,6 @@ module fsm_module (clk, key_code, data_ready, reset_in, data_out);
                         SUMA: suma = 1;
                         RESTA: resta = 1;
                         MULT: mult = 1;
-                        DIV: default:
                     endcase
                     newState = RESULT;
                 end
