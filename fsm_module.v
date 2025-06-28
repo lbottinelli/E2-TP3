@@ -17,9 +17,9 @@ module fsm_module (clk, reset_in, data_out,
     gpio_31
 );
     input wire clk;
-    wire data_ready;
     input wire reset_in;
-    wire [3:0] key_code;
+    reg key_pressed;
+    reg [3:0] key_code;
     output reg [15:0] data_out;
     output wire gpio_2, gpio_4, gpio_46, gpio_47;
     reg [15:0] display_out;
@@ -43,45 +43,21 @@ module fsm_module (clk, reset_in, data_out,
     parameter RESULT = 3'b100;
     
     // Data Storage
-    reg [14:0] lhs_;
-    reg [14:0] rhs;
-    reg [14:0] result;
-    reg [2:0] op;
+    reg [15:0] lhs;
+    reg [15:0] rhs;
+    reg [15:0] result;
+    reg [2:0] op_code;
 
     // Inputs
     reg CE;
     reg EQUAL;
     reg IS_NUM;
     reg IS_OP;
-
-    // always @(key_code) begin
-        // CE = key_code == KEY_CE;
-        // EQUAL = key_code == KEY_EQUAL;
-        // IS_NUM = (( key_code[1:0] != 2'b11 ) && (key_code[3:2] != 2'b11)) || key_code == KEY_0;
-        // // Chequea que no este en la columna 3, en la fila 3 o que sea 0
-        // IS_OP = !CE && !EQUAL && !IS_NUM;
-
-        // case (key_code)
-        //     KEY_1:   digit <= 4'd1;
-        //     KEY_2:   digit <= 4'd2;
-        //     KEY_3:   digit <= 4'd3;
-        //     KEY_4:   digit <= 4'd4;
-        //     KEY_5:   digit <= 4'd5;
-        //     KEY_6:   digit <= 4'd6;
-        //     KEY_7:   digit <= 4'd7;
-        //     KEY_8:   digit <= 4'd8;
-        //     KEY_9:   digit <= 4'd9;
-        //     KEY_0:   digit <= 4'd0;
-        //     KEY_A:   op_code <= SUMA;
-        //     KEY_B:   op_code <= RESTA;
-        //     KEY_C:   op_code <= MULT;
-        //     KEY_D:   op_code <= DIV;
-        //     default: digit <= 4'd0;
-        // endcase
-    // end
+    wire [3:0] new_key_code;
+    wire first_key_pressed;
+    reg second_key_pressed;
 
     reg [2:0] state = NUM_INIT;
-
     teclado_matrix teclado_mod(clk, reset_in,
     {gpio_36,
     gpio_42,
@@ -90,20 +66,13 @@ module fsm_module (clk, reset_in, data_out,
     {gpio_31,
     gpio_37,
     gpio_34,
-    gpio_43}, key_code, data_ready);
+    gpio_43}, new_key_code, first_key_pressed);
 
     // Display module
-    display_module display_mod(.VALUE_BIN(16'd1234), .internal_clock(clk), .VALUE_SIGNAL(gpio_46), .ENABLE_SIGNAL(gpio_2), .BOARD_CLOCK_SIGNAL(gpio_4), .DATA_CLOCK_SIGNAL(gpio_47));
+    display_module display_mod(.VALUE_BCD(display_out), .internal_clock(clk), .VALUE_SIGNAL(gpio_46), .ENABLE_SIGNAL(gpio_2), .BOARD_CLOCK_SIGNAL(gpio_4), .DATA_CLOCK_SIGNAL(gpio_47));
 
-    // // Concat Module
-    wire error;
-    wire [13:0] concat_result;
     reg [3:0] digit;
-    reg [1:0] op_code;
-    reg [13:0] concat_input;
-    concat_module #(.BIT_SIZE(14)) concat_mod (concat_input, digit, concat_result, error);
-    reg concat = 0;
-    
+
     // ALU registers
     reg suma;
     reg resta;
@@ -115,17 +84,17 @@ module fsm_module (clk, reset_in, data_out,
     // sumador
     wire sum_overflow;
     wire [14:0] sum_result;
-    sumador #(.BITS(15)) sumador_mod (lhs_, rhs, sum_result, sum_overflow);
+    sumador #(.BITS(15)) sumador_mod (lhs, rhs, sum_result, sum_overflow);
 
     // restador
     wire signo_resta;
     wire [14:0] resta_result;
-    restador #(.BITS(15)) restador_mod (lhs_, rhs, resta_result, signo_resta);
+    restador #(.BITS(15)) restador_mod (lhs, rhs, resta_result, signo_resta);
 
     // multiplicador
     wire mult_out_of_range;
     wire [14:0] mult_result;
-    multiplicador #(.BITS(15)) multiplicador_mod (lhs_, rhs, resta_result, mult_out_of_range);
+    multiplicador #(.BITS(15)) multiplicador_mod (lhs, rhs, resta_result, mult_out_of_range);
 
     // Synchronous logic
     reg [2:0] newState = LHS;
@@ -135,125 +104,96 @@ module fsm_module (clk, reset_in, data_out,
             state <= NUM_INIT;
         else
             state <= newState;
+        display_out <= new_display_out;
+        lhs <= new_lhs;
+        rhs <= new_rhs;
+        result <= new_result;
+        digit <= new_digit;
+        op_code <= new_op_code;
+        key_code <= new_key_code;
+        second_key_pressed <= first_key_pressed;
+        key_pressed <= second_key_pressed;
     end
 
-    // // Extract number value
-    // always @(key_code) begin
-    //     case (key_code)
-    //         KEY_1:   digit <= 4'd1;
-    //         KEY_2:   digit <= 4'd2;
-    //         KEY_3:   digit <= 4'd3;
-    //         KEY_4:   digit <= 4'd4;
-    //         KEY_5:   digit <= 4'd5;
-    //         KEY_6:   digit <= 4'd6;
-    //         KEY_7:   digit <= 4'd7;
-    //         KEY_8:   digit <= 4'd8;
-    //         KEY_9:   digit <= 4'd9;
-    //         KEY_0:   digit <= 4'd0;
-    //         KEY_A:   op_code <= SUMA;
-    //         KEY_B:   op_code <= RESTA;
-    //         KEY_C:   op_code <= MULT;
-    //         KEY_D:   op_code <= DIV;
-    //         default: digit <= 4'd0;
-    //     endcase
-    // end
+    reg [15:0] new_lhs;
+    reg [15:0] new_rhs;
+    reg [15:0] new_result;
+    reg [15:0] new_display_out;
+    reg [3:0] new_digit;
+    reg [2:0] new_op_code;
 
-
-        // // Concatenations
-        // if (concat) begin
-        //     // if (state == LHS)
-        //     //     lhs <= concat_result;
-        //     // else
-        //     //     rhs <= concat_result;
-        //     concat <= 0;
-        // end
-        // if (suma) begin
-        //     result <= sum_result;
-        //     suma <= 0;
-        // end
-        // if (resta) begin
-        //     result <= resta_result;
-        //     resta <= 0;
-        // end
-        // if (mult) begin
-        //     result <= mult_result;
-        //     mult <= 0;
-        // end
-        // if (div) begin
-        //     // TODO: division
-        //     mult <= 0;
-        // end
-
-
-    // Combinational logic: determine next state
+    // Combinational logic
     always @(*) begin
-        CE = key_code == KEY_CE;
-        EQUAL = key_code == KEY_EQUAL;
-        IS_NUM = (( key_code[1:0] != 2'b11 ) && (key_code[3:2] != 2'b11)) || key_code == KEY_0;
+        CE <= key_pressed && (key_code == KEY_CE);
+        EQUAL <= key_pressed && (key_code == KEY_EQUAL);
+        IS_NUM <= key_pressed && ((( key_code[1:0] != 2'b11 ) && (key_code[3:2] != 2'b11)) || key_code == KEY_0);
         // Chequea que no este en la columna 3, en la fila 3 o que sea 0
-        IS_OP = !CE && !EQUAL && !IS_NUM;
-        digit <= 0;
-        op_code <= 0;
+        IS_OP <= key_pressed && (!CE && !EQUAL && !IS_NUM);
+
+        new_digit <= digit;
+        new_op_code <= op_code;
+        new_lhs <= lhs;
+        new_rhs <= rhs;
+        new_display_out <= display_out;
+
         case (key_code)
-            KEY_1:   digit <= 4'd1;
-            KEY_2:   digit <= 4'd2;
-            KEY_3:   digit <= 4'd3;
-            KEY_4:   digit <= 4'd4;
-            KEY_5:   digit <= 4'd5;
-            KEY_6:   digit <= 4'd6;
-            KEY_7:   digit <= 4'd7;
-            KEY_8:   digit <= 4'd8;
-            KEY_9:   digit <= 4'd9;
-            KEY_0:   digit <= 4'd0;
-            KEY_A:   op_code <= SUMA;
-            KEY_B:   op_code <= RESTA;
-            KEY_C:   op_code <= MULT;
-            KEY_D:   op_code <= DIV;
-            default: digit <= 4'd0;
+            KEY_1:   new_digit <= 4'd1;
+            KEY_2:   new_digit <= 4'd2;
+            KEY_3:   new_digit <= 4'd3;
+            KEY_4:   new_digit <= 4'd4;
+            KEY_5:   new_digit <= 4'd5;
+            KEY_6:   new_digit <= 4'd6;
+            KEY_7:   new_digit <= 4'd7;
+            KEY_8:   new_digit <= 4'd8;
+            KEY_9:   new_digit <= 4'd9;
+            KEY_0:   new_digit <= 4'd0;
+            KEY_A:   new_op_code <= SUMA;
+            KEY_B:   new_op_code <= RESTA;
+            KEY_C:   new_op_code <= MULT;
+            KEY_D:   new_op_code <= DIV;
+            default: new_digit <= 4'd0;
         endcase
-    end
-    always @(*) begin
     
         newState <= state;
 
-        lhs_ <= 0;
         case (state)
             NUM_INIT: begin
                 if (CE) begin
                     newState <= NUM_INIT;
-                    lhs_ <= 0;
-                    rhs <= 0;
-                    result <= 0;
+                    new_lhs <= 0;
+                    new_rhs <= 0;
+                    new_result <= 0;
                 end
                 else if (EQUAL || IS_OP)
                     newState <= NUM_INIT;
                 else if (IS_NUM) begin
                     newState <= LHS;
-                    lhs_ <= digit;
+                    new_lhs <= digit;
                 end
-                display_out <= lhs_;
+                new_display_out <= lhs;
             end
-            // LHS: begin
-            //     if (CE) begin
-            //         newState = NUM_INIT;
-            //         lhs = 0;
-            //         rhs = 0;
-            //         result = 0;
-            //     end
-            //     if (IS_NUM) begin
-            //         newState = LHS;
-            //         lhs = (lhs) + digit;
-            //     end
-            //     else if (EQUAL) begin
-            //         result = lhs;
-            //         newState = RESULT;
-            //     end
-            //     else if (IS_OP) begin
-            //         newState = NUM_RHS;
-            //         op = op_code;
-            //     end
-            //     display_out = lhs;
-            // end
+            LHS: begin
+                if (CE) begin
+                    newState <= NUM_INIT;
+                    new_lhs <= 0;
+                    new_rhs <= 0;
+                    new_result <= 0;
+                end
+                else if (IS_NUM) begin
+                    newState <= LHS;
+                    new_lhs <= lhs << 4;
+                    new_lhs[3:0] <= digit;
+                end
+                else if (EQUAL) begin
+                    new_result <= lhs;
+                    newState <= RESULT;
+                end
+                else if (IS_OP) begin
+                    newState <= NUM_RHS;
+                    new_op_code <= op_code;
+                end
+                new_display_out <= lhs;
+            end
             // NUM_RHS: begin
             //     if (CE) begin
             //         newState = NUM_INIT;

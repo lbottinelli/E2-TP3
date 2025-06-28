@@ -20,7 +20,8 @@ module top (
     wire clk;
 
     // Internal oscilator
-    SB_HFOSC u_SB_HFOSC(.CLKHFPU(1), .CLKHFEN(1), .CLKHF(clk));
+    SB_HFOSC HFOSC_mod(.CLKHFPU(1), .CLKHFEN(1), .CLKHF(clk)); defparam HFOSC_mod.CLKHF_DIV = "0b10";
+
     
     wire [15:0] data;
     assign gpio_45 = 1'b0;
