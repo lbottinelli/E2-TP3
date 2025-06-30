@@ -74,27 +74,19 @@ module fsm_module (clk, reset_in, data_out,
     reg [3:0] digit;
 
     // ALU registers
-    reg suma;
-    reg resta;
-    reg mult;
-    reg div;
-    wire alu_error;
+    reg operate = 0;
+    reg new_operate = 0;
 
-    // ALU Modules
-    // sumador
-    wire sum_overflow;
-    wire [14:0] sum_result;
-    sumador #(.BITS(15)) sumador_mod (lhs, rhs, sum_result, sum_overflow);
+    // Alu modules
+    // Sumador
+    wire [15:0] sum_result;
+    wire carry_out;
+    sumador_bcd_4_digitos sumador_mod(.A(lhs), .B(rhs), .result(sum_result), .Cout(carry_out));
 
-    // restador
-    wire signo_resta;
-    wire [14:0] resta_result;
-    restador #(.BITS(15)) restador_mod (lhs, rhs, resta_result, signo_resta);
-
-    // multiplicador
-    wire mult_out_of_range;
-    wire [14:0] mult_result;
-    multiplicador #(.BITS(15)) multiplicador_mod (lhs, rhs, resta_result, mult_out_of_range);
+    // Restador
+    wire [15:0] resta_result;
+    wire negativo;
+    restador_bcd_4_digitos restador_mod(.A(lhs), .B(rhs), .R(resta_result), .neg(negativo));
 
     // Synchronous logic
     reg [2:0] newState = LHS;
@@ -113,6 +105,24 @@ module fsm_module (clk, reset_in, data_out,
         key_code <= new_key_code;
         second_key_pressed <= first_key_pressed;
         key_pressed <= second_key_pressed;
+        operate <= new_operate;
+
+        // operations:
+        if (operate) begin
+            operate <= 0;
+            case (op_code)
+            SUMA: begin
+                result <= sum_result;
+            end
+            RESTA: begin
+                //result <= resta_result;
+            end
+            MULT: begin
+            end
+            DIV: begin
+            end
+            endcase
+        end
     end
 
     reg [15:0] new_lhs;
@@ -126,15 +136,17 @@ module fsm_module (clk, reset_in, data_out,
     always @(*) begin
         CE <= key_pressed && (key_code == KEY_CE);
         EQUAL <= key_pressed && (key_code == KEY_EQUAL);
-        IS_NUM <= key_pressed && ((( key_code[1:0] != 2'b11 ) && (key_code[3:2] != 2'b11)) || key_code == KEY_0);
         // Chequea que no este en la columna 3, en la fila 3 o que sea 0
-        IS_OP <= key_pressed && (!CE && !EQUAL && !IS_NUM);
+        IS_NUM <= key_pressed && ((( key_code[1:0] != 2'b11 ) && (key_code[3:2] != 2'b11)) || key_code == KEY_0);
+        // Chequea que este en la columna 3
+        IS_OP <= key_pressed && (key_code[1:0] == 2'b11);
 
         new_digit <= digit;
         new_op_code <= op_code;
         new_lhs <= lhs;
         new_rhs <= rhs;
         new_display_out <= display_out;
+        new_result <= result;
 
         case (key_code)
             KEY_1:   new_digit <= 4'd1;
@@ -194,76 +206,74 @@ module fsm_module (clk, reset_in, data_out,
                 end
                 new_display_out <= lhs;
             end
-            // NUM_RHS: begin
-            //     if (CE) begin
-            //         newState = NUM_INIT;
-            //         lhs = 0;
-            //         rhs = 0;
-            //         result = 0;
-            //     end
-            //     if (IS_OP) begin
-            //         newState = NUM_RHS;
-            //         op = op_code;
-            //     end
-            //     else if (IS_NUM) begin
-            //         newState = RHS;
-            //         rhs = digit;
-            //     end
-            //     else if (EQUAL) begin
-            //         newState = RESULT;
-            //         result = lhs;
-            //     end
-            //     display_out = rhs;
-            // end
+            NUM_RHS: begin
+                if (CE) begin
+                    newState <= NUM_INIT;
+                    new_lhs <= 0;
+                    new_rhs <= 0;
+                    new_result <= 0;
+                end
+                else if (IS_OP) begin
+                    newState <= NUM_RHS;
+                    new_op_code <= op_code;
+                end
+                else if (IS_NUM) begin
+                    newState <= RHS;
+                    new_rhs <= digit;
+                end
+                else if (EQUAL) begin
+                    newState <= RESULT;
+                    new_result <= lhs;
+                end
+                new_display_out <= rhs;
+            end
 
-            // RHS: begin
-            //     if (CE) begin
-            //         newState = NUM_INIT;
-            //         lhs = 0;
-            //         rhs = 0;
-            //         result = 0;
-            //     end
-            //     if (IS_OP)
-            //         // TODO: Ver este caso
-            //         newState = NUM_RHS;
-            //     else if (IS_NUM) begin
-            //         newState = RHS;
-            //         concat = 1;
-            //         concat_input = rhs;
-            //     end
-            //     else if (EQUAL) begin
-            //         case (op)
-            //             SUMA: suma = 1;
-            //             RESTA: resta = 1;
-            //             MULT: mult = 1;
-            //         endcase
-            //         newState = RESULT;
-            //     end
-            //     display_out = rhs;
-            // end
-            // RESULT: begin
-            //     if (CE) begin
-            //         newState = NUM_INIT;
-            //         lhs = 0;
-            //         rhs = 0;
-            //         result = 0;
-            //     end
-            //     if (IS_OP) begin
-            //         newState = NUM_RHS;
-            //         lhs = result;
-            //         op = op_code;
-            //     end
-            //     else if (IS_NUM) begin
-            //         newState = LHS;
-            //         lhs = digit;
-            //     end
-            //     else if (EQUAL) begin
-            //         newState = RESULT;
-            //         lhs = result;
-            //         // TODO: Hacer que cuando pongo igual repita la operacion anterior. Ej 1+1= -> Ans + 1 = Result;
-            //     end
-            //     display_out = result;
-            // end
+            RHS: begin
+                if (CE) begin
+                    newState <= NUM_INIT;
+                    new_lhs <= 0;
+                    new_rhs <= 0;
+                    new_result <= 0;
+                end
+                else if (IS_OP) begin
+                    // TODO: Ver este caso
+                    new_op_code <= op_code;
+                    newState <= NUM_RHS;
+                end
+                else if (IS_NUM) begin
+                    newState <= RHS;
+                    new_rhs <= rhs << 4;
+                    new_rhs[3:0] <= digit;
+                end
+                else if (EQUAL) begin
+                    newState <= RESULT;
+                    new_operate <= 1;
+                end
+                new_display_out <= rhs;
+            end
+            RESULT: begin
+                if (CE) begin
+                    newState <= NUM_INIT;
+                    new_lhs <= 0;
+                    new_rhs <= 0;
+                    new_result <= 0;
+                end
+                else if (IS_OP) begin
+                    newState <= NUM_RHS;
+                    new_lhs <= result;
+                    new_op_code <= op_code;
+                end
+                else if (IS_NUM) begin
+                    newState <= LHS;
+                    new_lhs <= digit;
+                end
+                else if (EQUAL) begin
+                    newState <= RESULT;
+                    new_lhs <= result;
+                    // TODO: Hacer que cuando pongo igual repita la operacion anterior. Ej 1+1= -> Ans + 1 = Result;
+                end
+                new_display_out <= result;
+            end
             default: newState <= NUM_INIT;
         endcase
     end
