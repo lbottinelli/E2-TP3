@@ -47,7 +47,7 @@ module sumador_bcd_4_digitos (
         .S   (S[15:12]),
         .Cout(Cout)
     );
-    
+
     assign result = Cout? 16'b1111_1111_1111_1111 : S; // Si hay acarreo, mostramos 9999 (error de suma)
     
 endmodule
@@ -199,66 +199,66 @@ module multiplicador_bcd_4_digitos (
 
 endmodule
 
-// module bcd_modulo_4digit (
-//     input  [15:0] A,           // 4-digit BCD
-//     input  [15:0] B,           // 4-digit BCD
-//     output [15:0] Remainder,   // 4-digit BCD remainder
-//     output        DivideByZero
-// );
-//     wire [13:0] A_bin, B_bin;
-//     wire [13:0] rem_bin;
+module bcd_modulo_4digit (
+    input  [15:0] A,           // 4-digit BCD
+    input  [15:0] B,           // 4-digit BCD
+    output [15:0] Remainder,   // 4-digit BCD remainder
+    output        DivideByZero
+);
+    wire [13:0] A_bin, B_bin;
+    wire [13:0] rem_bin;
 
-//     // Convert BCD to binary
-//     assign A_bin = (A[15:12]*1000) + (A[11:8]*100) + (A[7:4]*10) + A[3:0];
-//     assign B_bin = (B[15:12]*1000) + (B[11:8]*100) + (B[7:4]*10) + B[3:0];
+    // Convert BCD to binary
+    assign A_bin = (A[15:12]*1000) + (A[11:8]*100) + (A[7:4]*10) + A[3:0];
+    assign B_bin = (B[15:12]*1000) + (B[11:8]*100) + (B[7:4]*10) + B[3:0];
 
-//     assign DivideByZero = (B_bin == 0);
+    assign DivideByZero = (B_bin == 0);
 
-//     assign rem_bin = DivideByZero ? 14'd0 : (A_bin % B_bin);
+    assign rem_bin = DivideByZero ? 14'd0 : (A_bin % B_bin);
 
-//     // Convert binary remainder back to BCD
-//     wire [3:0] bcd0, bcd1, bcd2, bcd3, bcd4_unused;
+    // Convert binary remainder back to BCD
+    wire [3:0] bcd0, bcd1, bcd2, bcd3, bcd4_unused;
 
-//     binary_to_bcd_20bit b2b (
-//         .binary_in({6'd0, rem_bin}), // pad to 20 bits
-//         .bcd0(bcd0),
-//         .bcd1(bcd1),
-//         .bcd2(bcd2),
-//         .bcd3(bcd3),
-//         .bcd4(bcd4_unused)  // ignored, result always < B
-//     );
+    binary_to_bcd_20bit b2b (
+        .binary_in({6'd0, rem_bin}), // pad to 20 bits
+        .bcd0(bcd0),
+        .bcd1(bcd1),
+        .bcd2(bcd2),
+        .bcd3(bcd3),
+        .bcd4(bcd4_unused)  // ignored, result always < B
+    );
 
-//     assign Remainder = {bcd3, bcd2, bcd1, bcd0};
-// endmodule
+    assign Remainder = {bcd3, bcd2, bcd1, bcd0};
+endmodule
 
-// module binary_to_bcd_20bit (
-//     input  [19:0] binary_in,
-//     output [3:0]  bcd0, // LSD
-//     output [3:0]  bcd1,
-//     output [3:0]  bcd2,
-//     output [3:0]  bcd3,
-//     output [3:0]  bcd4  // MSD
-// );
-//     integer i;
-//     reg [39:0] shift_reg;
+module binary_to_bcd_20bit (
+    input  [19:0] binary_in,
+    output [3:0]  bcd0, // LSD
+    output [3:0]  bcd1,
+    output [3:0]  bcd2,
+    output [3:0]  bcd3,
+    output [3:0]  bcd4  // MSD
+);
+    integer i;
+    reg [39:0] shift_reg;
 
-//     always @(*) begin
-//         shift_reg = 40'd0;
-//         shift_reg[19:0] = binary_in;
+    always @(*) begin
+        shift_reg = 40'd0;
+        shift_reg[19:0] = binary_in;
 
-//         for (i = 0; i < 20; i = i + 1) begin
-//             if (shift_reg[23:20] >= 5) shift_reg[23:20] += 3;
-//             if (shift_reg[27:24] >= 5) shift_reg[27:24] += 3;
-//             if (shift_reg[31:28] >= 5) shift_reg[31:28] += 3;
-//             if (shift_reg[35:32] >= 5) shift_reg[35:32] += 3;
-//             if (shift_reg[39:36] >= 5) shift_reg[39:36] += 3;
-//             shift_reg = shift_reg << 1;
-//         end
-//     end
+        for (i = 0; i < 20; i = i + 1) begin
+            if (shift_reg[23:20] >= 5) shift_reg[23:20] = shift_reg[23:20] + 3;
+            if (shift_reg[27:24] >= 5) shift_reg[27:24] = shift_reg[27:24] + 3;
+            if (shift_reg[31:28] >= 5) shift_reg[31:28] = shift_reg[31:28] + 3;
+            if (shift_reg[35:32] >= 5) shift_reg[35:32] = shift_reg[35:32] + 3;
+            if (shift_reg[39:36] >= 5) shift_reg[39:36] = shift_reg[39:36] + 3;
+            shift_reg = shift_reg << 1;
+        end
+    end
 
-//     assign bcd0 = shift_reg[23:20];
-//     assign bcd1 = shift_reg[27:24];
-//     assign bcd2 = shift_reg[31:28];
-//     assign bcd3 = shift_reg[35:32];
-//     assign bcd4 = shift_reg[39:36];
-// endmodule
+    assign bcd0 = shift_reg[23:20];
+    assign bcd1 = shift_reg[27:24];
+    assign bcd2 = shift_reg[31:28];
+    assign bcd3 = shift_reg[35:32];
+    assign bcd4 = shift_reg[39:36];
+endmodule

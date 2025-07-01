@@ -14,8 +14,12 @@ module fsm_module (clk, reset_in, data_out,
     gpio_43,
     gpio_34,
     gpio_37,
-    gpio_31
+    gpio_31,
+
+    // PWMs
+    pwms
 );
+    output reg [2:0] pwms = 0;
     input wire clk;
     input wire reset_in;
     reg key_pressed;
@@ -88,6 +92,16 @@ module fsm_module (clk, reset_in, data_out,
     wire negativo;
     restador_bcd_4_digitos restador_mod(.A(lhs), .B(rhs), .R(resta_result), .neg(negativo));
 
+    // Multiplicador
+    wire [15:0] mult_result;
+    wire overflow_mult;
+    multiplicador_bcd_4_digitos mult_mod(.A(lhs), .B(rhs), .R(mult_result), .overflow(overflow_mult));
+
+    // Resto
+    wire [15:0] resto_result;
+    wire divide_by_zero;
+    bcd_modulo_4digit resto_mod(.A(lhs), .B(rhs), .Remainder(resto_result), .DivideByZero(divide_by_zero));
+
     // Synchronous logic
     reg [2:0] newState = LHS;
     always @(posedge clk) begin
@@ -106,20 +120,25 @@ module fsm_module (clk, reset_in, data_out,
         second_key_pressed <= first_key_pressed;
         key_pressed <= second_key_pressed;
         operate <= new_operate;
-
+        pwms[1] <= pwms[1];
         // operations:
-        if (operate) begin
+        if (operate) begin            
+            //pwms <= pwms == 0 ? 2'b001 : pwms << 1; 
             operate <= 0;
             case (op_code)
             SUMA: begin
                 result <= sum_result;
+                pwms[1] <= 0;
             end
             RESTA: begin
-                //result <= resta_result;
+                pwms[1] <= negativo;
+                result <= resta_result;
             end
             MULT: begin
+                //result <= mult_result;
             end
             DIV: begin
+                //result <= resto_result;
             end
             endcase
         end
@@ -225,7 +244,7 @@ module fsm_module (clk, reset_in, data_out,
                     newState <= RESULT;
                     new_result <= lhs;
                 end
-                new_display_out <= rhs;
+                new_display_out <= 0;
             end
 
             RHS: begin

@@ -47,22 +47,22 @@ module teclado_matrix (
                 if (col[0] == 1) begin 
                     key_code <= state * 4 + 0; 
                     data_ready <= 1;
-                    anti_rebote_counter <= 15'd1000;
+                    anti_rebote_counter <= 15'd300;
                 end
                 else if (col[1] == 1) begin
                     key_code <= state * 4 + 1;
                     data_ready <= 1;
-                    anti_rebote_counter <= 15'd1000;
+                    anti_rebote_counter <= 15'd300;
                 end
                 else if (col[2] == 1) begin 
                     key_code <= state * 4 + 2;
                     data_ready <= 1;
-                    anti_rebote_counter <= 15'd1000;
+                    anti_rebote_counter <= 15'd300;
                 end
                 else if (col[3] == 1) begin 
                     key_code <= state * 4 + 3;
                     data_ready <= 1;
-                    anti_rebote_counter <= 15'd1000;
+                    anti_rebote_counter <= 15'd300;
                 end
                 //else begin key_code <= key_code; end
                 state <= state + 1; 
